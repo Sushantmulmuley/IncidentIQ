@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from normalizer import normalize
 from analyzer import analyze
 from database import get_db, save_incident, find_similar
+from slack_notifier import post_to_slack
 import json
 
 app = FastAPI()
@@ -20,30 +21,30 @@ async def receive_alert(request: Request):
     logs = data.get("logs", "")
 
     # Step 1 — clean the logs
-    cleaned = normalize(logs)
+    cleaned  = normalize(logs)
     service  = cleaned["service_name"]
     severity = cleaned["severity"]
-
     print(f"Service: {service} | Severity: {severity}")
 
-    # Step 2 — check memory — has this happened before?
-    db = next(get_db())
+    # Step 2 — check memory
+    db             = next(get_db())
     past_incidents = find_similar(db, service)
 
     memory_text = ""
     if past_incidents:
-        print(f"Found {len(past_incidents)} past incidents for {service}!")
-        last = past_incidents[0]
-        memory_text = f"This service had an incident before. Last root cause: {last.root_cause}"
+        last        = past_incidents[0]
+        memory_text = f"Seen before. Last fix: {last.root_cause}"
+        print(f"Memory found: {len(past_incidents)} past incidents")
     else:
-        print("First time seeing this service — no memory yet.")
+        memory_text = "First time seeing this incident."
+        print("No memory — first time")
 
     # Step 3 — AI analysis
     print("Sending to AI...")
     rca = await analyze(cleaned)
     print("AI responded!")
 
-    # Step 4 — save to database (build the memory)
+    # Step 4 — save to database
     save_incident(
         db           = db,
         service      = service,
@@ -54,10 +55,13 @@ async def receive_alert(request: Request):
     )
     print("Saved to database.")
 
-    # Step 5 — return everything including memory
+    # Step 5 — post to Slack
+    await post_to_slack(service, severity, rca, memory_text)
+
+    # Step 6 — return full response
     return {
-        "service":    service,
-        "severity":   severity,
-        "memory":     memory_text if memory_text else "First time seeing this incident.",
-        "rca":        rca,
+        "service":  service,
+        "severity": severity,
+        "memory":   memory_text,
+        "rca":      rca,
     }
