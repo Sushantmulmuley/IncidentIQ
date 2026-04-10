@@ -3,9 +3,11 @@ from normalizer import normalize
 from analyzer import analyze
 from database import get_db, save_incident, find_similar
 from slack_notifier import post_to_slack
+from dashboard import router as dashboard_router
 import json
 
 app = FastAPI()
+app.include_router(dashboard_router)
 
 @app.get("/")
 def home():
