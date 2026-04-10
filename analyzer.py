@@ -1,9 +1,16 @@
 import httpx
 import json
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
+# Read .env file directly
+env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+if os.path.exists(env_path):
+    with open(env_path, "r") as f:
+        for line in f:
+            line = line.strip()
+            if "=" in line and not line.startswith("#"):
+                key, value = line.split("=", 1)
+                os.environ[key.strip()] = value.strip()
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 GROQ_MODEL   = "llama-3.3-70b-versatile"
@@ -18,19 +25,17 @@ Analyze the server logs and return ONLY a JSON object like this:
   "timeline": ["first thing that happened", "then this", "then this"],
   "action_items": ["specific technical fix 1", "fix 2", "fix 3"],
   "summary": "2 sentence technical summary",
-  "founder_explanation": "Explain this incident in plain English for a non-technical founder or manager. No jargon. Mention what the user experienced, how long it may have lasted, rough revenue/order impact if possible, and how long the fix takes. Max 3 sentences.",
-  "estimated_impact": "rough estimate of business impact e.g. checkout down for ~7 min, ~30-50 orders affected"
+  "founder_explanation": "Plain English for a non-technical founder. No jargon at all. Tell them what the user experienced, roughly how long it lasted, and how long the fix takes. Max 3 sentences.",
+  "estimated_impact": "rough business impact e.g. checkout was down for 7 min, roughly 30-50 orders affected"
 }
 
 Rules:
 - founder_explanation must have ZERO technical jargon
-- action_items must be specific — exact values, not vague suggestions
-- Return ONLY the JSON. No extra text."""
+- action_items must be specific with exact values not vague suggestions
+- Return ONLY the JSON. No extra text. No markdown."""
 
 
 async def analyze(normalized):
-    """Send cleaned logs to Groq AI. Get back full RCA for both engineers and founders."""
-
     if not GROQ_API_KEY:
         return {"error": "GROQ_API_KEY not set in .env file"}
 
