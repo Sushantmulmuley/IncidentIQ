@@ -2,6 +2,11 @@ content = open("README.md", "w", encoding="utf-8")
 content.write("""# IncidentIQ
 
 > The AI-powered incident explainer for teams without a dedicated SRE.
+              
+## Live demo
+
+https://web-production-1b3385.up.railway.app
+Dashboard: https://web-production-1b3385.up.railway.app/dashboard
 
 IncidentIQ reads your server error logs and explains what broke, why it broke, and exactly what to fix — in plain English — delivered to Slack in under 60 seconds. No more 2am log archaeology.
 
