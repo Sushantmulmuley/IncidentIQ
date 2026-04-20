@@ -1,4 +1,5 @@
-# IncidentIQ
+content = open("README.md", "w", encoding="utf-8")
+content.write("""# IncidentIQ
 
 > The AI-powered incident explainer for teams without a dedicated SRE.
 
@@ -64,3 +65,6 @@ Python, FastAPI, Groq API, LLaMA 3.3-70B, SQLAlchemy, SQLite, boto3, Slack Block
 ## Built by
 
 Sushant Mulmuley — https://github.com/Sushantmulmuley
+""")
+content.close()
+print("Done")
