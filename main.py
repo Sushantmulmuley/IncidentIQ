@@ -3,6 +3,7 @@ from normalizer import normalize
 from analyzer import analyze
 from database import get_db, save_incident, find_similar
 from slack_notifier import post_to_slack
+from whatsapp_notifier import send_whatsapp
 from dashboard import router as dashboard_router
 import json
 
@@ -60,7 +61,10 @@ async def receive_alert(request: Request):
     # Step 5 — post to Slack
     await post_to_slack(service, severity, rca, memory_text)
 
-    # Step 6 — return full response
+    # Step 6 — post to WhatsApp
+    await send_whatsapp(service, severity, rca)
+
+    # Step 7 — return full response
     return {
         "service":  service,
         "severity": severity,
