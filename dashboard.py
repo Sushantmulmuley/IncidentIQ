@@ -45,17 +45,43 @@ table{{width:100%;border-collapse:collapse}}
 th{{text-align:left;padding:10px 12px;font-size:12px;color:#666;text-transform:uppercase;border-bottom:1px solid #2a2a2a}}
 td{{padding:12px;font-size:14px;border-bottom:1px solid #1f1f1f;vertical-align:top}}
 .empty{{color:#444;text-align:center;padding:40px}}
+textarea{{width:100%;background:#111;border:1px solid #2a2a2a;border-radius:8px;color:#e0e0e0;padding:12px;font-family:monospace;font-size:13px;resize:vertical;min-height:120px}}
+textarea:focus{{outline:none;border-color:#7b8cde}}
+.btn{{background:#7b8cde;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;cursor:pointer;margin-top:12px}}
+.btn:hover{{background:#6a6fcc}}
+.result{{background:#111;border:1px solid #2a2a2a;border-radius:8px;padding:16px;margin-top:16px;display:none}}
+.result-title{{font-size:13px;font-weight:600;color:#7b8cde;margin-bottom:8px}}
+.result-body{{font-size:13px;color:#ccc;line-height:1.6}}
 </style>
 </head>
 <body>
 <h1>IncidentIQ</h1>
 <p class="sub">Real-time incident intelligence dashboard</p>
+
+<div class="section" style="margin-bottom:20px">
+<div class="stitle">Analyze logs instantly</div>
+<p style="font-size:13px;color:#666;margin-bottom:12px">Paste any server error logs below and get an AI-generated root cause analysis in seconds.</p>
+<textarea id="logInput" placeholder="Paste your logs here...&#10;[ERROR] db-conn-pool exhausted max=50&#10;[ERROR] orders-service timeout 5001ms&#10;[ERROR] HTTP 503 /api/checkout failed"></textarea>
+<button class="btn" onclick="analyzeLogs()">Analyze logs</button>
+<div class="result" id="result">
+  <div class="result-title">Root cause</div>
+  <div class="result-body" id="rootCause"></div>
+  <div class="result-title" style="margin-top:12px">Action items</div>
+  <div class="result-body" id="actionItems"></div>
+  <div class="result-title" style="margin-top:12px">For your manager</div>
+  <div class="result-body" id="founderExp"></div>
+  <div class="result-title" style="margin-top:12px">Estimated impact</div>
+  <div class="result-body" id="impact"></div>
+</div>
+</div>
+
 <div class="cards">
 <div class="card"><div class="num">{len(incidents)}</div><div class="lbl">Total incidents</div></div>
 <div class="card"><div class="num" style="color:#E24B4A">{severity_counts['critical']+severity_counts['high']}</div><div class="lbl">High + critical</div></div>
 <div class="card"><div class="num" style="color:#EF9F27">{len(service_counts)}</div><div class="lbl">Services affected</div></div>
 <div class="card"><div class="num" style="color:#1D9E75">{severity_counts['low']+severity_counts['medium']}</div><div class="lbl">Low + medium</div></div>
 </div>
+
 <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px">
 <div class="section">
 <div class="stitle">All incidents</div>
@@ -69,6 +95,40 @@ td{{padding:12px;font-size:14px;border-bottom:1px solid #1f1f1f;vertical-align:t
 {top_services if top_services else '<div class="empty">No data yet</div>'}
 </div>
 </div>
+
+<script>
+async function analyzeLogs() {{
+  const logs = document.getElementById('logInput').value.trim();
+  if (!logs) {{ alert('Please paste some logs first'); return; }}
+  
+  const btn = document.querySelector('.btn');
+  btn.textContent = 'Analyzing...';
+  btn.disabled = true;
+
+  try {{
+    const response = await fetch('/webhook/raw', {{
+      method: 'POST',
+      headers: {{'Content-Type': 'application/json'}},
+      body: JSON.stringify({{logs: logs}})
+    }});
+    
+    const data = await response.json();
+    const rca  = data.rca;
+
+    document.getElementById('rootCause').textContent   = rca.root_cause || 'Not found';
+    document.getElementById('actionItems').innerHTML   = (rca.action_items || []).map((a,i) => `${{i+1}}. ${{a}}`).join('<br>');
+    document.getElementById('founderExp').textContent  = rca.founder_explanation || 'Not available';
+    document.getElementById('impact').textContent      = rca.estimated_impact || 'Not available';
+    document.getElementById('result').style.display    = 'block';
+
+  }} catch(e) {{
+    alert('Error: ' + e.message);
+  }}
+
+  btn.textContent = 'Analyze logs';
+  btn.disabled    = false;
+}}
+</script>
 </body>
 </html>"""
     return HTMLResponse(content=html)
