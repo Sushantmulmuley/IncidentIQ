@@ -101,7 +101,15 @@ textarea:focus{{outline:none;border-color:#7b8cde}}
 
 <div>
 <div style="font-size:13px;font-weight:600;color:#aaa;margin-bottom:10px">Cloud cost optimizer</div>
-<textarea id="costData" style="width:100%;background:#111;border:1px solid #2a2a2a;border-radius:8px;color:#e0e0e0;padding:12px;font-family:monospace;font-size:12px;resize:vertical;min-height:140px" placeholder="Paste your AWS/GCP bill here...&#10;Example:&#10;EC2: $450/month (t3.large x4)&#10;RDS: $280/month (db.t3.medium)&#10;S3: $45/month (500GB)&#10;CloudWatch: $30/month"></textarea>
+<textarea id="costData" style="width:100%;background:#111;border:1px solid #2a2a2a;border-radius:8px;color:#e0e0e0;padding:12px;font-family:monospace;font-size:12px;resize:vertical;min-height:120px" placeholder="Paste your AWS/GCP bill here...&#10;EC2: $450/month (t3.large x4)&#10;RDS: $280/month (db.t3.medium)&#10;S3: $45/month (500GB)"></textarea>
+<div style="margin-top:10px;padding:10px;background:#111;border:1px dashed #2a2a2a;border-radius:8px;text-align:center">
+  <label style="font-size:12px;color:#666;cursor:pointer">
+    Or upload your invoice PDF
+    <input type="file" id="pdfFile" accept=".pdf" style="display:none" onchange="handlePdfUpload(this)">
+    <span style="color:#7b8cde;margin-left:6px;text-decoration:underline">Browse file</span>
+  </label>
+  <div id="pdfStatus" style="font-size:12px;color:#666;margin-top:4px"></div>
+</div>
 <button class="btn" onclick="optimizeCosts()" style="margin-top:8px">Optimize costs</button>
 </div>
 
@@ -165,6 +173,72 @@ async function analyzeLogs() {{
 
   btn.textContent = 'Analyze logs';
   btn.disabled    = false;
+}}
+
+async function handlePdfUpload(input) {{
+  const file = input.files[0];
+  if (!file) return;
+
+  document.getElementById('pdfStatus').textContent = 'Reading PDF...';
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {{
+    const response = await fetch('/cost/optimize-pdf', {{
+      method: 'POST',
+      body: formData
+    }});
+
+    const data = await response.json();
+
+    if (data.error) {{
+      document.getElementById('pdfStatus').textContent = 'Error: ' + data.error;
+      return;
+    }}
+
+    document.getElementById('pdfStatus').textContent = 'PDF read — showing results below';
+
+    const recs = (data.top_recommendations || []).map(r =>
+      `<div style="padding:10px 0;border-bottom:1px solid #2a2a2a">
+        <span style="color:#7b8cde;font-weight:600">${{r.service}}</span>
+        <span style="color:#666;font-size:12px;margin-left:8px">${{r.difficulty}} fix</span><br>
+        <span style="color:#ccc">${{r.recommended_action}}</span><br>
+        <span style="color:#1D9E75">Save: ${{r.estimated_saving}}/month</span>
+      </div>`
+    ).join('');
+
+    const quickWins = (data.quick_wins || []).map((w,i) =>
+      `${{i+1}}. ${{w}}`
+    ).join('<br>');
+
+    document.getElementById('costOptBody').innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+        <div style="background:#111;border-radius:8px;padding:12px;border:1px solid #2a2a2a">
+          <div style="font-size:11px;color:#666">Monthly spend</div>
+          <div style="font-size:20px;font-weight:700;color:#fff">${{data.total_monthly_spend}}</div>
+        </div>
+        <div style="background:#111;border-radius:8px;padding:12px;border:1px solid #2a2a2a">
+          <div style="font-size:11px;color:#666">Potential savings</div>
+          <div style="font-size:20px;font-weight:700;color:#1D9E75">${{data.potential_savings}}</div>
+        </div>
+        <div style="background:#111;border-radius:8px;padding:12px;border:1px solid #2a2a2a">
+          <div style="font-size:11px;color:#666">Savings %</div>
+          <div style="font-size:20px;font-weight:700;color:#EF9F27">${{data.savings_percentage}}</div>
+        </div>
+      </div>
+      <div style="margin-bottom:12px;color:#ccc">${{data.summary}}</div>
+      <div style="font-size:13px;font-weight:600;color:#aaa;margin-bottom:8px">Top recommendations</div>
+      ${{recs}}
+      <div style="font-size:13px;font-weight:600;color:#aaa;margin:16px 0 8px">Quick wins (do today)</div>
+      <div style="color:#ccc;line-height:1.8">${{quickWins}}</div>
+    `;
+
+    document.getElementById('costOptResult').style.display = 'block';
+
+  }} catch(e) {{
+    document.getElementById('pdfStatus').textContent = 'Error: ' + e.message;
+  }}
 }}
 
 async function calcIncidentCost() {{
