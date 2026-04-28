@@ -20,8 +20,7 @@ def dashboard(request: Request):
     rows = ""
     for inc in incidents:
         color = {"critical":"#E24B4A","high":"#EF9F27","medium":"#378ADD","low":"#1D9E75"}.get(inc.severity,"#888780")
-        rows += f"<tr><td>{inc.id}</td><td>{inc.service_name}</td><td><span style='color:{color}'>{inc.severity.upper()}</span></td><td>{inc.root_cause}</td><td>{inc.created_at.strftime('%d %b %Y %H:%M')}</td></tr>"
-
+        rows += f"<tr><td>{inc.id}</td><td>{inc.service_name}</td><td><span style='color:{color}'>{inc.severity.upper()}</span></td><td>{inc.root_cause}</td><td>{inc.created_at.strftime('%d %b %Y %H:%M')}</td><td><a href='/postmortem/{inc.id}' style='color:#7b8cde;font-size:12px;text-decoration:none'>Download PDF</a></td></tr>"
     top_services = ""
     for service, count in sorted(service_counts.items(), key=lambda x: x[1], reverse=True):
         top_services += f"<div style='display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #2a2a2a;'><span>{service}</span><span style='background:#1a1a2e;padding:2px 10px;border-radius:20px;color:#7b8cde'>{count}</span></div>"
@@ -132,7 +131,7 @@ textarea:focus{{outline:none;border-color:#7b8cde}}
 <div class="section">
 <div class="stitle">All incidents</div>
 <table>
-<thead><tr><th>#</th><th>Service</th><th>Severity</th><th>Root cause</th><th>Time</th></tr></thead>
+<thead><tr><th>#</th><th>Service</th><th>Severity</th><th>Root cause</th><th>Time</th><th>Postmortem</th></tr></thead>
 <tbody>{rows if rows else '<tr><td colspan="5" class="empty">No incidents yet</td></tr>'}</tbody>
 </table>
 </div>

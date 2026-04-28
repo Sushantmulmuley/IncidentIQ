@@ -1,3 +1,7 @@
+from postmortem import generate_postmortem_text, generate_pdf
+from fastapi.responses import StreamingResponse
+from database import SessionLocal, RCAOutput
+import io
 from fastapi import FastAPI, Request
 from normalizer import normalize
 from analyzer import analyze
@@ -111,3 +115,49 @@ async def optimize_costs_pdf(file: UploadFile = File(...)):
 
     result = await optimize_cloud_costs(text)
     return result
+
+@app.get("/postmortem/{incident_id}")
+async def get_postmortem(incident_id: int):
+    """
+    Generates and downloads a PDF postmortem for a given incident.
+    """
+    db       = SessionLocal()
+    incident = db.query(Incident).filter(Incident.id == incident_id).first()
+    rca_row  = db.query(RCAOutput).filter(RCAOutput.incident_id == incident_id).first()
+    db.close()
+
+    if not incident:
+        return {"error": "Incident not found"}
+
+    # Build RCA dict from stored data
+    rca = {
+        "root_cause":          rca_row.root_cause if rca_row else "",
+        "action_items":        json.loads(rca_row.action_items) if rca_row else [],
+        "timeline":            [],
+        "founder_explanation": "",
+        "estimated_impact":    "",
+    }
+
+    # Build incident dict
+    inc_dict = {
+        "id":           incident.id,
+        "service_name": incident.service_name,
+        "severity":     incident.severity,
+        "raw_logs":     incident.raw_logs,
+        "created_at":   str(incident.created_at),
+    }
+
+    # Generate postmortem text using AI
+    postmortem = await generate_postmortem_text(inc_dict, rca)
+
+    if "error" in postmortem:
+        return {"error": postmortem["error"]}
+
+    # Generate PDF
+    pdf_bytes = generate_pdf(inc_dict, postmortem)
+
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type = "application/pdf",
+        headers    = {"Content-Disposition": f"attachment; filename=postmortem-incident-{incident_id}.pdf"}
+    )
