@@ -1,6 +1,6 @@
 from postmortem import generate_postmortem_text, generate_pdf
 from fastapi.responses import StreamingResponse
-from database import SessionLocal, RCAOutput
+from database import SessionLocal, Incident
 import io
 from fastapi import FastAPI, Request
 from normalizer import normalize
@@ -123,7 +123,6 @@ async def get_postmortem(incident_id: int):
     """
     db       = SessionLocal()
     incident = db.query(Incident).filter(Incident.id == incident_id).first()
-    rca_row  = db.query(RCAOutput).filter(RCAOutput.incident_id == incident_id).first()
     db.close()
 
     if not incident:
@@ -131,8 +130,8 @@ async def get_postmortem(incident_id: int):
 
     # Build RCA dict from stored data
     rca = {
-        "root_cause":          rca_row.root_cause if rca_row else "",
-        "action_items":        json.loads(rca_row.action_items) if rca_row else [],
+        "root_cause":          incident.root_cause or "",
+        "action_items":        json.loads(incident.action_items) if incident.action_items else [],
         "timeline":            [],
         "founder_explanation": "",
         "estimated_impact":    "",
