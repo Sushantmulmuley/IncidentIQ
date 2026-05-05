@@ -79,15 +79,9 @@ async def receive_alert(request: Request):
     }
 @app.post("/cost/incident")
 async def incident_cost(request: Request):
-    """Calculate revenue lost during an incident."""
-    data             = await request.json()
-    downtime_minutes = float(data.get("downtime_minutes", 5))
-    orders_per_hour  = float(data.get("orders_per_hour", 300))
-    avg_order_value  = float(data.get("avg_order_value", 850))
-
-    result = await calculate_incident_cost(
-        downtime_minutes, orders_per_hour, avg_order_value
-    )
+    """Universal incident cost calculator."""
+    data   = await request.json()
+    result = await calculate_incident_cost(data)
     return result
 
 

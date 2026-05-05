@@ -81,21 +81,71 @@ textarea:focus{{outline:none;border-color:#7b8cde}}
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
 
 <div>
+<div>
 <div style="font-size:13px;font-weight:600;color:#aaa;margin-bottom:10px">Incident cost calculator</div>
+
 <div style="margin-bottom:8px">
-  <label style="font-size:12px;color:#666">Average order value (₹)</label>
-  <input id="orderValue" type="number" value="850" style="width:100%;background:#111;border:1px solid #2a2a2a;border-radius:6px;color:#e0e0e0;padding:8px;font-size:13px;margin-top:4px">
+  <label style="font-size:12px;color:#666">Business type</label>
+  <select id="bizType" style="width:100%;background:#111;border:1px solid #2a2a2a;border-radius:6px;color:#e0e0e0;padding:8px;font-size:13px;margin-top:4px">
+    <option value="ecommerce">E-commerce</option>
+    <option value="saas">SaaS</option>
+    <option value="fintech">Fintech</option>
+    <option value="healthcare">Healthcare</option>
+    <option value="logistics">Logistics</option>
+    <option value="other">Other</option>
+  </select>
 </div>
+
 <div style="margin-bottom:8px">
-  <label style="font-size:12px;color:#666">Orders per hour</label>
-  <input id="ordersHour" type="number" value="300" style="width:100%;background:#111;border:1px solid #2a2a2a;border-radius:6px;color:#e0e0e0;padding:8px;font-size:13px;margin-top:4px">
+  <label style="font-size:12px;color:#666">Monthly revenue (₹)</label>
+  <input id="monthlyRevenue" type="number" value="5000000" style="width:100%;background:#111;border:1px solid #2a2a2a;border-radius:6px;color:#e0e0e0;padding:8px;font-size:13px;margin-top:4px">
 </div>
+
 <div style="margin-bottom:8px">
   <label style="font-size:12px;color:#666">Downtime (minutes)</label>
-  <input id="downtimeMins" type="number" value="5" style="width:100%;background:#111;border:1px solid #2a2a2a;border-radius:6px;color:#e0e0e0;padding:8px;font-size:13px;margin-top:4px">
+  <input id="downtimeMins" type="number" value="7" style="width:100%;background:#111;border:1px solid #2a2a2a;border-radius:6px;color:#e0e0e0;padding:8px;font-size:13px;margin-top:4px">
 </div>
-<button class="btn" onclick="calcIncidentCost()">Calculate cost</button>
-<div id="incidentCostResult" style="margin-top:12px;font-size:13px;color:#7b8cde;display:none"></div>
+
+<div style="margin-bottom:8px">
+  <label style="font-size:12px;color:#666">Users affected</label>
+  <input id="usersAffected" type="number" value="500" style="width:100%;background:#111;border:1px solid #2a2a2a;border-radius:6px;color:#e0e0e0;padding:8px;font-size:13px;margin-top:4px">
+</div>
+
+<details style="margin-bottom:8px">
+  <summary style="font-size:12px;color:#7b8cde;cursor:pointer;margin-bottom:8px">+ Optional: Engineering cost</summary>
+  <div style="padding:8px 0">
+    <input id="engineers" type="number" placeholder="Engineers involved" style="width:100%;background:#111;border:1px solid #2a2a2a;border-radius:6px;color:#e0e0e0;padding:8px;font-size:12px;margin-bottom:6px">
+    <input id="hoursSpent" type="number" placeholder="Hours spent" style="width:100%;background:#111;border:1px solid #2a2a2a;border-radius:6px;color:#e0e0e0;padding:8px;font-size:12px;margin-bottom:6px">
+    <input id="engineerCost" type="number" placeholder="Cost per engineer per hour (₹)" style="width:100%;background:#111;border:1px solid #2a2a2a;border-radius:6px;color:#e0e0e0;padding:8px;font-size:12px">
+  </div>
+</details>
+
+<details style="margin-bottom:8px">
+  <summary style="font-size:12px;color:#7b8cde;cursor:pointer;margin-bottom:8px">+ Optional: SLA penalty</summary>
+  <div style="padding:8px 0">
+    <input id="slaPenalty" type="number" placeholder="Penalty per hour of breach (₹)" style="width:100%;background:#111;border:1px solid #2a2a2a;border-radius:6px;color:#e0e0e0;padding:8px;font-size:12px">
+  </div>
+</details>
+
+<details style="margin-bottom:8px">
+  <summary style="font-size:12px;color:#7b8cde;cursor:pointer;margin-bottom:8px">+ Optional: Churn risk</summary>
+  <div style="padding:8px 0">
+    <input id="customerLtv" type="number" placeholder="Avg customer lifetime value (₹)" style="width:100%;background:#111;border:1px solid #2a2a2a;border-radius:6px;color:#e0e0e0;padding:8px;font-size:12px;margin-bottom:6px">
+    <input id="churnPct" type="number" placeholder="Estimated churn % (leave blank to auto-estimate)" style="width:100%;background:#111;border:1px solid #2a2a2a;border-radius:6px;color:#e0e0e0;padding:8px;font-size:12px">
+  </div>
+</details>
+
+<details style="margin-bottom:8px">
+  <summary style="font-size:12px;color:#7b8cde;cursor:pointer;margin-bottom:8px">+ Optional: Support cost</summary>
+  <div style="padding:8px 0">
+    <input id="supportTickets" type="number" placeholder="Extra support tickets" style="width:100%;background:#111;border:1px solid #2a2a2a;border-radius:6px;color:#e0e0e0;padding:8px;font-size:12px;margin-bottom:6px">
+    <input id="costPerTicket" type="number" placeholder="Cost per ticket (₹)" style="width:100%;background:#111;border:1px solid #2a2a2a;border-radius:6px;color:#e0e0e0;padding:8px;font-size:12px;margin-bottom:6px">
+    <input id="refunds" type="number" placeholder="Total refunds issued (₹)" style="width:100%;background:#111;border:1px solid #2a2a2a;border-radius:6px;color:#e0e0e0;padding:8px;font-size:12px">
+  </div>
+</details>
+
+<button class="btn" onclick="calcIncidentCost()">Calculate total cost</button>
+<div id="incidentCostResult" style="margin-top:12px;font-size:13px;display:none"></div>
 </div>
 
 <div>
@@ -241,26 +291,48 @@ async function handlePdfUpload(input) {{
 }}
 
 async function calcIncidentCost() {{
-  const orderValue  = document.getElementById('orderValue').value;
-  const ordersHour  = document.getElementById('ordersHour').value;
-  const downtimeMins = document.getElementById('downtimeMins').value;
+  const payload = {{
+    business_type:    document.getElementById('bizType').value,
+    monthly_revenue:  parseFloat(document.getElementById('monthlyRevenue').value) || 0,
+    downtime_minutes: parseFloat(document.getElementById('downtimeMins').value) || 0,
+    users_affected:   parseInt(document.getElementById('usersAffected').value) || 0,
+    engineers:        parseFloat(document.getElementById('engineers').value) || 0,
+    hours_spent:      parseFloat(document.getElementById('hoursSpent').value) || 0,
+    engineer_cost_hr: parseFloat(document.getElementById('engineerCost').value) || 0,
+    sla_penalty_hr:   parseFloat(document.getElementById('slaPenalty').value) || 0,
+    customer_ltv:     parseFloat(document.getElementById('customerLtv').value) || 0,
+    churn_pct:        parseFloat(document.getElementById('churnPct').value) || 0,
+    support_tickets:  parseInt(document.getElementById('supportTickets').value) || 0,
+    cost_per_ticket:  parseFloat(document.getElementById('costPerTicket').value) || 0,
+    refunds:          parseFloat(document.getElementById('refunds').value) || 0,
+  }};
 
   const response = await fetch('/cost/incident', {{
     method: 'POST',
     headers: {{'Content-Type': 'application/json'}},
-    body: JSON.stringify({{
-      downtime_minutes: parseFloat(downtimeMins),
-      orders_per_hour:  parseFloat(ordersHour),
-      avg_order_value:  parseFloat(orderValue)
-    }})
+    body: JSON.stringify(payload)
   }});
 
   const data = await response.json();
+  const b    = data.breakdown || {{}};
   const el   = document.getElementById('incidentCostResult');
+
   el.style.display = 'block';
-  el.innerHTML = `<strong>Orders lost:</strong> ${{data.orders_lost}}<br>
-                  <strong>Revenue impact:</strong> ₹${{data.revenue_lost.toLocaleString()}}<br>
-                  <span style="color:#666">${{data.summary}}</span>`;
+  el.innerHTML = `
+    <div style="background:#111;border-radius:8px;padding:14px;border:1px solid #2a2a2a">
+      <div style="font-size:12px;font-weight:600;color:#aaa;margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em">Cost breakdown</div>
+      ${{b.revenue_lost      ? `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #1f1f1f"><span style="color:#888">Revenue lost</span><span style="color:#E24B4A">₹${{b.revenue_lost.toLocaleString()}}</span></div>` : ''}}
+      ${{b.engineering_cost  ? `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #1f1f1f"><span style="color:#888">Engineering cost</span><span style="color:#EF9F27">₹${{b.engineering_cost.toLocaleString()}}</span></div>` : ''}}
+      ${{b.sla_penalty       ? `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #1f1f1f"><span style="color:#888">SLA penalty</span><span style="color:#EF9F27">₹${{b.sla_penalty.toLocaleString()}}</span></div>` : ''}}
+      ${{b.churn_cost        ? `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #1f1f1f"><span style="color:#888">Churn risk${{data.churn_estimated ? ' (estimated)' : ''}}</span><span style="color:#EF9F27">₹${{b.churn_cost.toLocaleString()}}</span></div>` : ''}}
+      ${{b.support_cost      ? `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #1f1f1f"><span style="color:#888">Support cost</span><span style="color:#EF9F27">₹${{b.support_cost.toLocaleString()}}</span></div>` : ''}}
+      <div style="display:flex;justify-content:space-between;padding:8px 0;margin-top:4px">
+        <span style="color:#fff;font-weight:600">Total incident cost</span>
+        <span style="color:#1D9E75;font-weight:700;font-size:16px">₹${{data.total_cost.toLocaleString()}}</span>
+      </div>
+      <div style="font-size:12px;color:#666;margin-top:6px">${{data.summary}}</div>
+    </div>
+  `;
 }}
 
 async function optimizeCosts() {{

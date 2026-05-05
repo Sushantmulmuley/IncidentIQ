@@ -16,21 +16,89 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 GROQ_MODEL   = "llama-3.3-70b-versatile"
 
 
-async def calculate_incident_cost(downtime_minutes, orders_per_hour, avg_order_value):
+async def calculate_incident_cost(data: dict) -> dict:
     """
-    Calculate revenue lost during an incident.
-    Simple math — no AI needed for this part.
+    Universal incident cost calculator.
+    Works for any business type — not just e-commerce.
+    Uses industry standard DevOps cost formula.
     """
-    hours_down    = downtime_minutes / 60
-    orders_lost   = hours_down * orders_per_hour
-    revenue_lost  = orders_lost * avg_order_value
+
+    # Basic info — required
+    downtime_minutes = float(data.get("downtime_minutes", 0))
+    monthly_revenue  = float(data.get("monthly_revenue", 0))
+    business_type    = data.get("business_type", "other")
+    users_affected   = int(data.get("users_affected", 0))
+
+    # Engineering cost — optional
+    engineers        = int(data.get("engineers", 0))
+    hours_spent      = float(data.get("hours_spent", 0))
+    engineer_cost_hr = float(data.get("engineer_cost_hr", 0))
+
+    # SLA penalty — optional
+    sla_penalty_hr   = float(data.get("sla_penalty_hr", 0))
+
+    # Churn risk — optional
+    customer_ltv     = float(data.get("customer_ltv", 0))
+    churn_pct        = float(data.get("churn_pct", 0))
+
+    # Support cost — optional
+    support_tickets  = int(data.get("support_tickets", 0))
+    cost_per_ticket  = float(data.get("cost_per_ticket", 0))
+    refunds          = float(data.get("refunds", 0))
+
+    # ── Calculations ──────────────────────────────────────────
+
+    # 1. Revenue lost
+    revenue_per_hour = monthly_revenue / 720  # 720 hours in a month
+    hours_down       = downtime_minutes / 60
+    revenue_lost     = revenue_per_hour * hours_down
+
+    # 2. Engineering cost
+    engineering_cost = engineers * hours_spent * engineer_cost_hr
+
+    # 3. SLA penalty
+    sla_penalty = sla_penalty_hr * hours_down
+
+    # 4. Churn risk
+    # If churn % not provided, estimate based on business type
+    if churn_pct == 0 and users_affected > 0:
+        churn_estimates = {
+            "ecommerce":  2.0,
+            "saas":       1.5,
+            "fintech":    3.0,
+            "healthcare": 0.5,
+            "logistics":  1.0,
+            "other":      2.0,
+        }
+        churn_pct = churn_estimates.get(business_type, 2.0)
+        churn_estimated = True
+    else:
+        churn_estimated = False
+
+    churned_users = round(users_affected * (churn_pct / 100))
+    churn_cost    = churned_users * customer_ltv
+
+    # 5. Support cost
+    support_cost = (support_tickets * cost_per_ticket) + refunds
+
+    # ── Total ──────────────────────────────────────────────────
+    total = revenue_lost + engineering_cost + sla_penalty + churn_cost + support_cost
 
     return {
-        "downtime_minutes": downtime_minutes,
-        "orders_lost":      round(orders_lost),
-        "revenue_lost":     round(revenue_lost),
-        "currency":         "INR",
-        "summary":          f"Approximately {round(orders_lost)} orders lost. Estimated revenue impact: ₹{round(revenue_lost):,}"
+        "business_type":     business_type,
+        "downtime_minutes":  downtime_minutes,
+        "breakdown": {
+            "revenue_lost":      round(revenue_lost),
+            "engineering_cost":  round(engineering_cost),
+            "sla_penalty":       round(sla_penalty),
+            "churn_cost":        round(churn_cost),
+            "support_cost":      round(support_cost),
+        },
+        "churn_estimated":   churn_estimated,
+        "churned_users":     churned_users,
+        "total_cost":        round(total),
+        "currency":          "INR",
+        "summary":           f"This incident cost approximately ₹{round(total):,} in total. Revenue lost: ₹{round(revenue_lost):,}. Engineering time: ₹{round(engineering_cost):,}."
     }
 
 
