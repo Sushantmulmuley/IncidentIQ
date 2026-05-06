@@ -234,13 +234,23 @@ details summary::-webkit-details-marker{{display:none}}
 <!-- TAB 5: CHAT -->
 <div id="tab-chat" class="tab">
   <div class="section">
-    <div class="stitle">Ask anything about your infrastructure</div>
-    <p style="font-size:13px;color:#666;margin-bottom:16px">Ask questions about your incidents, patterns, and fixes in plain English.</p>
+    <div class="stitle">DevOps AI Assistant</div>
+    <p style="font-size:13px;color:#666;margin-bottom:12px">Ask anything — about your incidents or general DevOps questions.</p>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+      <button onclick="askSuggested(this)" style="background:#1a1a2e;border:1px solid #2a2a3e;color:#7b8cde;padding:6px 12px;border-radius:20px;font-size:12px;cursor:pointer">Which service breaks most?</button>
+      <button onclick="askSuggested(this)" style="background:#1a1a2e;border:1px solid #2a2a3e;color:#7b8cde;padding:6px 12px;border-radius:20px;font-size:12px;cursor:pointer">What happened this week?</button>
+      <button onclick="askSuggested(this)" style="background:#1a1a2e;border:1px solid #2a2a3e;color:#7b8cde;padding:6px 12px;border-radius:20px;font-size:12px;cursor:pointer">How to fix connection pool exhaustion?</button>
+      <button onclick="askSuggested(this)" style="background:#1a1a2e;border:1px solid #2a2a3e;color:#7b8cde;padding:6px 12px;border-radius:20px;font-size:12px;cursor:pointer">What is MTTR and how to improve it?</button>
+      <button onclick="askSuggested(this)" style="background:#1a1a2e;border:1px solid #2a2a3e;color:#7b8cde;padding:6px 12px;border-radius:20px;font-size:12px;cursor:pointer">Best practices for AWS CloudWatch alerts?</button>
+      <button onclick="askSuggested(this)" style="background:#1a1a2e;border:1px solid #2a2a3e;color:#7b8cde;padding:6px 12px;border-radius:20px;font-size:12px;cursor:pointer">What caused the last critical incident?</button>
+    </div>
+
     <div class="chat-box" id="chatBox">
-      <div class="chat-msg chat-ai">Hi! I can answer questions about your incidents. Try asking: "Which service breaks the most?" or "What happened last week?"</div>
+      <div class="chat-msg chat-ai">Hi! I am your DevOps AI Assistant. I can answer questions about your incidents AND general DevOps topics — AWS, Kubernetes, monitoring, incident response, best practices. What do you want to know?</div>
     </div>
     <div class="chat-input-row">
-      <input class="chat-input" id="chatInput" type="text" placeholder="Ask anything about your infrastructure..." onkeydown="if(event.key==='Enter') sendChat()">
+      <input class="chat-input" id="chatInput" type="text" placeholder="Ask about your incidents or any DevOps question..." onkeydown="if(event.key==='Enter') sendChat()">
       <button class="send-btn" onclick="sendChat()">Send</button>
     </div>
   </div>
@@ -371,29 +381,47 @@ function showCostResults(data) {{
   document.getElementById('costOptResult').style.display = 'block';
 }}
 
+
+  let chatHistory = [];
+
+function askSuggested(btn) {{
+  document.getElementById('chatInput').value = btn.textContent;
+  sendChat();
+}}
+
 async function sendChat() {{
-  const input = document.getElementById('chatInput');
+  const input    = document.getElementById('chatInput');
   const question = input.value.trim();
   if (!question) return;
   input.value = '';
 
   const chatBox = document.getElementById('chatBox');
   chatBox.innerHTML += `<div class="chat-msg chat-user">${{question}}</div>`;
-  chatBox.innerHTML += `<div class="chat-msg chat-ai" id="typing">Thinking...</div>`;
+  const typingId = 'typing-' + Date.now();
+  chatBox.innerHTML += `<div class="chat-msg chat-ai" id="${{typingId}}">Thinking...</div>`;
   chatBox.scrollTop = chatBox.scrollHeight;
+
+  chatHistory.push({{"role": "user", "content": question}});
 
   try {{
     const response = await fetch('/chat', {{
-      method: 'POST', headers: {{'Content-Type': 'application/json'}},
-      body: JSON.stringify({{question: question}})
+      method: 'POST',
+      headers: {{'Content-Type': 'application/json'}},
+      body: JSON.stringify({{
+        question: question,
+        history:  chatHistory.slice(-6)
+      }})
     }});
-    const data = await response.json();
-    document.getElementById('typing').textContent = data.answer || 'Sorry, I could not answer that.';
-    document.getElementById('typing').removeAttribute('id');
+    const data   = await response.json();
+    const answer = data.answer || 'Sorry, I could not answer that.';
+    document.getElementById(typingId).textContent = answer;
+    document.getElementById(typingId).removeAttribute('id');
+    chatHistory.push({{"role": "assistant", "content": answer}});
   }} catch(e) {{
-    document.getElementById('typing').textContent = 'Error: ' + e.message;
-    document.getElementById('typing').removeAttribute('id');
+    document.getElementById(typingId).textContent = 'Error: ' + e.message;
+    document.getElementById(typingId).removeAttribute('id');
   }}
+
   chatBox.scrollTop = chatBox.scrollHeight;
 }}
 </script>

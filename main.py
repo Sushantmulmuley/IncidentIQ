@@ -157,65 +157,73 @@ async def get_postmortem(incident_id: int):
 
 @app.post("/chat")
 async def chat(request: Request):
-    """Answer questions about incidents using AI."""
-    from analyzer import analyze
+    import httpx
+    import os
+
     data     = await request.json()
     question = data.get("question", "")
+    history  = data.get("history", [])  # conversation history from browser
 
     if not question:
         return {"answer": "Please ask a question."}
 
-    # Get incident summary from database
+    # Get incident data from database
     db        = SessionLocal()
     incidents = db.query(Incident).order_by(Incident.created_at.desc()).limit(50).all()
     db.close()
 
-    # Build context from incidents
+    # Build incident context
     incident_summary = "\n".join([
-        f"#{inc.id} | {inc.service_name} | {inc.severity} | {inc.root_cause} | {inc.created_at}"
+        f"#{inc.id} | {inc.service_name} | {inc.severity} | {inc.root_cause or 'N/A'} | {inc.created_at}"
         for inc in incidents
-    ])
-
-    # Ask Groq with incident context
-    import httpx
-    import os
-
-    env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
-    if os.path.exists(env_path):
-        with open(env_path, "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if "=" in line:
-                    key, value = line.split("=", 1)
-                    os.environ[key.strip()] = value.strip()
+    ]) if incidents else "No incidents recorded yet."
 
     groq_key = os.getenv("GROQ_API_KEY", "")
 
-    system_prompt = f"""You are IncidentIQ, an AI assistant that answers questions about a company's incident history.
+    system_prompt = f"""You are IncidentIQ Assistant — an expert DevOps engineer and incident management specialist.
 
-Here is the incident history:
+You have two capabilities:
+1. Answer questions about THIS company's specific incident history (data below)
+2. Answer general DevOps, cloud, and infrastructure questions from your expertise
+
+COMPANY INCIDENT HISTORY:
 {incident_summary}
 
-Answer the user's question based on this data. Be specific, concise, and helpful.
-If the question cannot be answered from the data, say so honestly."""
+RULES:
+- For questions about their incidents — use the data above, reference specific incident numbers
+- For general DevOps questions — answer from your expertise (AWS, Kubernetes, Docker, monitoring, etc.)
+- Always be specific and actionable
+- Keep answers concise but complete
+- If asked about fixing something — give exact commands or steps
+- Never say "I don't have access to" — either use incident data or general knowledge"""
+
+    # Build messages with conversation history
+    messages = [{"role": "system", "content": system_prompt}]
+
+    # Add conversation history for context
+    for msg in history[-6:]:  # last 6 messages for context
+        messages.append({"role": msg["role"], "content": msg["content"]})
+
+    # Add current question
+    messages.append({"role": "user", "content": question})
 
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
                 "https://api.groq.com/openai/v1/chat/completions",
-                headers={{"Authorization": f"Bearer {{groq_key}}", "Content-Type": "application/json"}},
-                json={{
+                headers={
+                    "Authorization": f"Bearer {groq_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
                     "model": "llama-3.3-70b-versatile",
                     "temperature": 0.3,
-                    "max_tokens": 500,
-                    "messages": [
-                        {{"role": "system", "content": system_prompt}},
-                        {{"role": "user", "content": question}},
-                    ],
-                }}
+                    "max_tokens": 800,
+                    "messages": messages,
+                }
             )
-        result  = response.json()
-        answer  = result["choices"][0]["message"]["content"]
-        return {{"answer": answer}}
+        result = response.json()
+        answer = result["choices"][0]["message"]["content"]
+        return {"answer": answer}
     except Exception as e:
-        return {{"answer": f"Error: {{str(e)}}"}}
+        return {"answer": f"Error: {str(e)}"}
