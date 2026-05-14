@@ -1,7 +1,4 @@
-python -c "
-content = open('README.md', 'w', encoding='utf-8')
-content.write('''# IncidentIQ
-
+# IncidentIQ
 > AI-powered DevOps incident intelligence platform for teams without a dedicated SRE.
 
 ## Live demo
@@ -16,7 +13,7 @@ IncidentIQ reads your server error logs and explains what broke, why it broke, a
 ## What makes it different
 
 | Feature | IncidentIQ | AWS DevOps Agent | Datadog |
-|---|---|---|---|
+|---|---|---|----||
 | Works with any stack | Yes | No - AWS only | Yes |
 | Two-audience RCA | Yes | No | No |
 | Incident memory | Yes | No | No |
@@ -27,15 +24,15 @@ IncidentIQ reads your server error logs and explains what broke, why it broke, a
 
 ## Features
 
-- AI root cause analysis using Groq LLaMA 3.3-70B - explains what broke in 60 seconds
-- Two-audience RCA - technical explanation for engineers + plain English for founders in one AI call
-- Incident memory - remembers every past incident, surfaces last known fix on repeat failures
-- Auto postmortem PDF - generates complete professional postmortem report automatically
-- Cloud cost optimizer - paste your AWS/GCP bill or upload PDF invoice, get specific savings recommendations
-- Universal incident cost calculator - calculates revenue lost, engineering cost, SLA penalty, churn risk
-- DevOps AI chatbot - ask anything about your incidents OR general DevOps questions
-- AWS CloudWatch monitoring - auto-polls log groups every 60 seconds
-- Slack notifications - color-coded Block Kit cards with root cause, action items, impact
+- AI root cause analysis using Groq LLaMA 3.3-70B
+- Two-audience RCA - technical for engineers + plain English for founders
+- Incident memory - surfaces last known fix on repeat failures
+- Auto postmortem PDF - generates complete report automatically
+- Cloud cost optimizer - paste bill or upload PDF invoice
+- Universal incident cost calculator - revenue lost, engineering cost, SLA penalty, churn risk
+- DevOps AI chatbot - ask anything about incidents OR general DevOps
+- AWS CloudWatch monitoring - auto-polls every 60 seconds
+- Slack notifications - color-coded Block Kit cards
 - Tabbed dashboard - Overview, Analyze, Cost, Incidents, Chat
 
 ## Quick start
@@ -59,25 +56,22 @@ IncidentIQ reads your server error logs and explains what broke, why it broke, a
 
     python start.py
 
-4. Run the CloudWatch monitor
+4. Run the monitor
 
     python monitor.py
 
-Server at http://localhost:8000
-Dashboard at http://localhost:8000/dashboard
-
 ## Project structure
 
-    main.py              - Web server and pipeline orchestration
-    normalizer.py        - Log cleaning and extraction
+    main.py              - Web server and pipeline
+    normalizer.py        - Log cleaning
     analyzer.py          - Groq AI integration
-    database.py          - Incident memory (SQLAlchemy + SQLite)
-    slack_notifier.py    - Slack Block Kit notifications
+    database.py          - Incident memory
+    slack_notifier.py    - Slack notifications
     dashboard.py         - Tabbed web dashboard
-    monitor.py           - AWS CloudWatch auto-monitoring
-    postmortem.py        - Auto postmortem PDF generator
-    cost_analyzer.py     - Cloud cost optimizer and incident cost calculator
-    whatsapp_notifier.py - WhatsApp alerts (Twilio)
+    monitor.py           - CloudWatch monitoring
+    postmortem.py        - Auto postmortem PDF
+    cost_analyzer.py     - Cloud cost optimizer
+    whatsapp_notifier.py - WhatsApp alerts
 
 ## Tech stack
 
@@ -88,7 +82,3 @@ Python, FastAPI, Groq API (LLaMA 3.3-70B), SQLAlchemy, SQLite, boto3, Slack Bloc
 Sushant Mulmuley
 GitHub: https://github.com/Sushantmulmuley
 Project: https://github.com/Sushantmulmuley/IncidentIQ
-''')
-content.close()
-print('Done')
-"
